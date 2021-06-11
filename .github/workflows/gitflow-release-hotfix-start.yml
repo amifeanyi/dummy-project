@@ -20,7 +20,7 @@ jobs:
         java: [11]
     name: Initiates release or hotfix process from issues
     env:
-      GITHUB_TOKEN: ${{ secrets.MY_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - id: flow-type
