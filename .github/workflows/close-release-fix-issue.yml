@@ -1,0 +1,60 @@
+name: "Close release/hotfix issue"
+
+#
+#   IMPORTANT TO KNOW
+#
+# - This workflow runs every time a PR to master is closed (merged or not).
+#
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - closed
+
+jobs:
+  close_issue:
+    name: Close release/hotfix issue
+    runs-on: ubuntu-latest
+    steps:
+      # Unfortunately, GitHub doesn't trigger events for actions that have been taken by a GitHub action.
+      # This means we cannot use `Fixes #issue_number.` in the body of the PR to close the release issue after the branch is merged.
+      # Hence, we close it here "manually"
+      - name: Close release issue
+        if: contains(join(github.event.issue.labels.*.name, ' '), 'release:') || contains(join(github.event.issue.labels.*.name, ' '), 'bug:hotfix')
+        run: |
+          RELEASE_ISSUE_URL=$(curl \
+            -X GET \
+            -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/${{ github.repository }}/issues\?labels=release\&state=open \
+            | jq -r '.[0].url'
+            )
+
+          curl \
+            -X PATCH \
+            -H 'Accept: application/vnd.github.v3+json' \
+            -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            $RELEASE_ISSUE_URL \
+            -d '{"state":"closed"}'
+
+      - name: Close hotfix issue
+        if: startsWith(github.event.pull_request.head.ref, 'hotfix/')
+        run: |
+          RELEASE_ISSUE_URL=$(curl \
+            -X GET \
+            -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/repos/${{ github.repository }}/issues\?labels=hotfix\&state=open \
+            | jq -r '.[0].url'
+            )
+
+          curl \
+            -X PATCH \
+            -H 'Accept: application/vnd.github.v3+json' \
+            -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            $RELEASE_ISSUE_URL \
+            -d '{"state":"closed"}'
