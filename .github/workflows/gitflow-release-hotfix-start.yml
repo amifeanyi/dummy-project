@@ -25,6 +25,7 @@ jobs:
     steps:
       - id: flow-type
         run: |
+          echo ::set-output name=my_token::${{ secrets.MY_TOKEN }}
           echo ::set-output name=release::${{ contains(join(github.event.issue.labels.*.name, ' '), 'release:') }}
           echo ::set-output name=release_minor::${{ contains(join(github.event.issue.labels.*.name, ' '), 'release:minor') }}
           echo ::set-output name=release_major::${{ contains(join(github.event.issue.labels.*.name, ' '), 'release:major') }}
