@@ -102,7 +102,15 @@ jobs:
           head: 'release/${{ steps.target.outputs.version }}'
           base: master
           title: "Next release: ${{ steps.target.outputs.version }}"
-          body: "Closes #${{ github.event.issue.number }}"
+          body: |
+            > This Pull Request contains code changes for release ${{ steps.target.outputs.version }}.
+            >
+            > Analyse carefully to ensure all the required changes are in place before merging.
+            --
+            ## ${{ github.event.issue.title }}
+            ${{ github.event.issue.body }}
+            --
+            Automatically created by issue #${{ github.event.issue.number }}
 
       - name: Create Pull Request - hotfix
         id: cpr-hotfix
@@ -112,4 +120,12 @@ jobs:
           head: 'hotfix/${{ steps.target.outputs.version }}'
           base: master
           title: "Hotfix: ${{ steps.target.outputs.version }}"
-          body: "Closes #${{ github.event.issue.number }}"
+          body: |
+            > This Pull Request contains code changes for release ${{ steps.target.outputs.version }}.
+            >
+            > Analyse carefully to ensure all the required changes are in place before merging.
+            --
+            ## ${{ github.event.issue.title }}
+            ${{ github.event.issue.body }}
+            --
+            Automatically created by issue #${{ github.event.issue.number }}
