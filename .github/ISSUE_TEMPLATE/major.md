@@ -1,7 +1,7 @@
 ---
 name: Major
 about: Major release
-title: ''
+title: Next Major Release
 labels: release:major
 assignees: ''
 

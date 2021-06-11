@@ -1,7 +1,7 @@
 ---
 name: Patch
 about: Bug fix
-title: ''
+title: Next Bug Fix
 labels: bug:hotfix
 assignees: ''
 

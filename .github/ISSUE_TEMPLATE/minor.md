@@ -1,7 +1,7 @@
 ---
 name: Minor
 about: Minor release
-title: ''
+title: Next Minor Release
 labels: release:minor
 assignees: ''
 
