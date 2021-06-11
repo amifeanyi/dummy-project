@@ -1,0 +1,54 @@
+name: Build and publish bug fixes to QA
+on:
+  pull_request:
+    branches:
+      - hotfix/*
+    types:
+      - closed
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    strategy:
+      matrix:
+        java: [11]
+    name: Build project with Java ${{ matrix.java }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+            ${{ runner.os }}-
+
+      - name: Setup java ${{ matrix.java }}
+        uses: actions/setup-java@v1
+        with:
+          java-version: ${{ matrix.java }}
+
+      - name: Bump patch snapshot version
+        run: |
+          mvn build-helper:parse-version versions:set -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} versions:commit
+
+      - name: Build docker image
+        run: mvn clean package -Pdocker-image -Pno-scs -Dmaven.test.skip -Djib.to.auth.username=${{ steps.ecr-credentials.outputs.username }}  -Djib.to.auth.password=${{ steps.ecr-credentials.outputs.password }}
+
+      - name: Push updated version to origin
+        run: |
+          git config --global user.email "bot@backbase.com"
+          git config --global user.name "Release BOT"
+          git add --all
+          git commit -m "Bumping SNAPSHOT Version"
+          git push
+
+      - name: Create Pull Request - merge ${{ github.event.pull_request.head.ref }} into develop
+        uses: thomaseizinger/create-pull-request@master
+        with:
+          head: ${{ github.event.pull_request.head.ref }}
+          base: develop
+          title: Merge hotfix ${{ github.event.pull_request.head.ref }} into develop
+          reviewers: ${{ join(github.event.pull_request.requested_reviewers.*.login, ',') }}
+          body: |
+            PR #${{ github.event.pull_request.number }} was merged into release branch. Please review changes to be merged to develop.
