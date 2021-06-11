@@ -14,6 +14,8 @@ jobs:
       matrix:
         java: [11]
     name: Build project with Java ${{ matrix.java }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
