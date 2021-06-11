@@ -23,15 +23,6 @@ jobs:
       matrix:
         java: [ 11 ]
     name: Make a release
-    timeout-minutes: 30
-    env:
-      DEVOPS_CICD_ECR_BASE_URL: ${{ secrets.DEVOPS_CICD_ECR_BASE_URL }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      BB_USERNAME: ${{ secrets.BB_USERNAME }}
-      BB_PASSWORD: ${{ secrets.BB_PASSWORD }}
-      BB_GITHUB_PACKAGES_USER: botuser
-      BB_GITHUB_PACKAGES_PAT: ${{ secrets.BB_GITHUB_PACKAGES_PAT }}
-      RELEASE_VERSION_PREFIX: ${{ secrets.RELEASE_VERSION_PREFIX }}
 
     # Set flow type
     steps:
@@ -52,13 +43,6 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-
-      - name: maven-settings-xml-action
-        uses: whelk-io/maven-settings-xml-action@v9
-        with:
-          repositories: '[{ "id": "Backbase Repository", "url": "https://repo.backbase.com/repo" }, { "id": "github", "url": "https://maven.pkg.github.com/${GITHUB_REPOSITORY_OWNER}/mambu-clients" }]'
-          plugin_repositories: '[{ "id": "Backbase Repository", "url": "https://repo.backbase.com/repo" }]'
-          servers: '[{ "id": "Backbase Repository", "username": "${BB_USERNAME}", "password": "${BB_PASSWORD}" }, { "id": "github", "username": "${BB_GITHUB_PACKAGES_USER}", "password": "${BB_GITHUB_PACKAGES_PAT}" }]'
 
       # Get project version from ref - merged branch
       - name: Get Project Version
@@ -84,24 +68,6 @@ jobs:
         run: |
           mvn build-helper:parse-version versions:set -DnewVersion=\${{ steps.target.outputs.version }} versions:commit
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.DEVOPS_CICD_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.DEVOPS_CICD_AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.DEVOPS_CICD_AWS_REGION }}
-
-      - name: Get AWS ECR credentials
-        id: ecr-credentials
-        run: |
-          echo "::set-output name=username::AWS"
-          echo "::set-output name=password::`aws ecr get-login-password --region ${{ secrets.DEVOPS_CICD_AWS_REGION }}`"
-
-      # Only for release. For hotfix it's done in hotfix-version-update workflow
-      - name: Build docker image
-        if: steps.flow-type.outputs.release == 'true'
-        run: mvn clean package -Pdocker-image -Pno-scs -Dmaven.test.skip -Djib.to.auth.username=${{ steps.ecr-credentials.outputs.username }}  -Djib.to.auth.password=${{ steps.ecr-credentials.outputs.password }}
-
       - name: Push updated version to origin/master
         if: steps.flow-type.outputs.release == 'true'
         run: |
@@ -116,8 +82,8 @@ jobs:
           ref: master
       - name: Add tag
         run: |
-          git tag -a ${RELEASE_VERSION_PREFIX}-${{ steps.target.outputs.version }} -m "Release ${RELEASE_VERSION_PREFIX}-${{ steps.target.outputs.version }}"
-          git push origin ${RELEASE_VERSION_PREFIX}-${{ steps.target.outputs.version }}
+          git tag -a ${{ steps.target.outputs.version }} -m "Release ${{ steps.target.outputs.version }}"
+          git push origin ${{ steps.target.outputs.version }}
 
       # If it's a release(major & minor) reset incrementalVersion for next dev lifecycle - target branch - develop
       # else if it's a hotfix merge bump the incremental version - target branch - develop
